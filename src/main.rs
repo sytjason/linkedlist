@@ -1,7 +1,7 @@
-mod first;
-use first::{List};
+use linkedlist::first;
+
 fn main() {
-    let mut list = List::new();
+    let mut list = first::List::new();
     list.push(2);
     list.push(32);
     list.push(33);

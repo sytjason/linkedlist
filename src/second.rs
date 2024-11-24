@@ -1,23 +1,18 @@
-use std::mem;
-
-pub struct List {
-    head: Link,
+pub struct List<T> {
+    head: Link<T>,
 }
 
-enum Link {
-    Empty,
-    More(Box<Node>),
+type Link<T> = Option<Box<Node<T>>>;
+
+struct Node<T> {
+    elem: T,
+    next: Link<T>,
 }
 
-struct Node {
-    elem: i32,
-    next: Link,
-}
-
-impl List {
+impl<T: std::fmt::Display> List<T> {
     pub fn print_list(&mut self) {
         let mut p = &self.head;
-        while let Link::More(ref node) = p {
+        while let Some(ref node) = p {
             print!("{} -> ", node.elem);
             p = &node.next;
         }
@@ -25,34 +20,37 @@ impl List {
     }
 
     pub fn new() -> Self {
-        List { head: Link::Empty }
+        List { head: Option::None }
     }
     
-    pub fn push(&mut self, _elem: i32) {
+    pub fn push(&mut self, _elem: T) {
         let new_node = Box::new(Node {
             elem: _elem,
-            next: mem::replace(&mut self.head, Link::Empty),
+            next: self.head.take(),
         });
 
-        self.head = Link::More(new_node);
+        self.head = Some(new_node);
     }
 
-    pub fn pop(&mut self) -> Option<i32> {
-        match mem::replace(&mut self.head, Link::Empty) {
-            Link::Empty => None,
-            Link::More(node) => {
-                self.head = node.next;
-                Some(node.elem)
-            }
-        }
+    pub fn pop(&mut self) -> Option<T> {
+        self.head.take().map(|node| {
+            self.head = node.next;
+            node.elem
+        })
+    }
+
+    pub fn peek(&self) -> Option<&T> {
+        self.head.as_ref().map(|node| {
+            &node.elem
+        })
     }
 }
 
-impl Drop for List {
+impl<T> Drop for List<T> {
     fn drop(&mut self) {
-        let mut p = mem::replace(&mut self.head, Link::Empty);
-        while let Link::More(mut node) = p {
-            p = mem::replace(&mut node.next, Link::Empty);
+        let mut p = self.head.take();
+        while let Some(mut node) = p {
+            p = node.next.take();
         }
     }
 }
@@ -79,6 +77,11 @@ mod test {
         mylist.pop();
         mylist.pop();
         assert_eq!(mylist.pop(), None);
+
+        mylist.push(33);
+        mylist.push(97);
+        assert_eq!(mylist.peek(), Some(&97));
+        assert_eq!(mylist.peek(), Some(&97));
     }
 }
 
